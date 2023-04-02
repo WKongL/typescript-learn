@@ -1,4 +1,15 @@
 # typescript-learn
+# 函数
+## 函数重载
+函数重载或方法重载是使用相同名称和不同参数数量或类型创建多个方法的一种能力。
+```typescript
+function add(x: number, y: number): number;
+function add(x: string, y: string): string;
+function add(x: any, y: any): any {
+  return x + y;
+}
+
+```
 # 类(class)
 传统的JavaScript程序使用函数和基于原型的继承来创建可重用的组件，但对于熟悉使用面向对象方式的程序员来讲就有些棘手，因为他们用的是基于类的继承并且对象是由类构建出来的
 ## 类
@@ -91,6 +102,113 @@ console.log(Cat.getAnimalType());
 console.log(Cat.type); // 错误
 cat.sex = '公' // 错误! sex 是只读的.
 ```
+## 类型推论
+如果没有明确的指定类型，那么 TypeScript 会依照类型推论的规则推断出一个类型。
+```typescript
+let x = 1;
+x = true; // 报错
+// 上面的代码等价于
+let x: number = 1;
+x = true; // 报错
+
+```
+## 类型断言
+某些情况下，我们可能比typescript更加清楚的知道某个变量的类型，所以我们可能希望手动指定一个值的类型
+```typescript
+// 尖括号写法
+let str: any = "to be or not to be";
+let strLength: number = (<string>str).length;
+
+// as 写法
+let str: any = "to be or not to be";
+let strLength: number = (str as string).length;
+
+// 非空断言
+let user: string | null | undefined;
+console.log(user!.toUpperCase()); // 编译正确
+console.log(user.toUpperCase()); // 错误
+
+// 确定赋值断言
+let value:number
+console.log(value); // Variable 'value' is used before being assigned.
+
+let value1!:number
+console.log(value1); // undefined 编译正确
+```
+
+## 联合类型
+联合类型用|分隔，表示取值可以为多种类型中的一种
+```typescript
+let status:string|number
+status='to be or not to be'
+status=1
+```
+## 交叉类型
+交叉类型就是跟联合类型相反，用&操作符表示，交叉类型就是两个类型必须存在
+注意：交叉类型取的多个类型的并集，但是如果key相同但是类型不同，则该key为never类型
+```typescript
+interface IpersonA{
+  name: string,
+  age: number
+}
+interface IpersonB {
+  name: string,
+  gender: string
+}
+
+let person: IpersonA & IpersonB = { 
+    name: "师爷",
+    age: 18,
+    gender: "男"
+};
+```
+## 类型守卫
+类型保护是可执行运行时检查的一种表达式，用于确保该类型在一定的范围内。 换句话说，类型保护可以保证一个字符串是一个字符串，尽管它的值也可以是一个数值。类型保护与特性检测并不是完全不同，其主要思想是尝试检测属性、方法或原型，以确定如何处理值。
+```typescript
+// 1、in 关键字
+interface InObj1 {
+    a: number,
+    x: string
+}
+interface InObj2 {
+    a: number,
+    y: string
+}
+function isIn(arg: InObj1 | InObj2) {
+    // x 在 arg 打印 x
+    if ('x' in arg) console.log('x')
+    // y 在 arg 打印 y
+    if ('y' in arg) console.log('y')
+}
+isIn({a:1, x:'xxx'});
+isIn({a:1, y:'yyy'});
+// 2、typeof 关键字
+// typeof 只支持：typeof 'x' === 'typeName' 和 typeof 'x' !== 'typeName'，x 必须是 'number', 'string', 'boolean', 'symbol'。
+function isTypeof( val: string | number) {
+  if (typeof val === "number") return 'number'
+  if (typeof val === "string") return 'string'
+  return '啥也不是'
+}
+
+// 3、instanceof
+function creatDate(date: Date | string){
+    console.log(date)
+    if(date instanceof Date){
+        date.getDate()
+    }else {
+        return new Date(date)
+    }
+}
+
+// 4、自定义类型保护的类型谓词
+function isNumber(num: any): num is number {
+    return typeof num === 'number';
+}
+function isString(str: any): str is string{
+    return typeof str=== 'string';
+}
+
+```
 
 # 接口（Interfaces）
 ## 接口初探
@@ -158,7 +276,80 @@ square.color = "blue";
 square.sideLength = 10;
 ```
 
-## 泛型(generic)
+## 接口与类型别名的区别
+实际上，在大多数的情况下使用接口类型和类型别名的效果等价，但是在某些特定的场景下这两者还是存在很大区别。
+
+type(类型别名)会给一个类型起个新名字。 type 有时和 interface 很像，但是可以作用于原始值（基本类型），联合类型，元组以及其它任何你需要手写的类型。起别名不会新建一个类型 - 它创建了一个新 名字来引用那个类型。给基本类型起别名通常没什么用，尽管可以做为文档的一种形式使用。
+
+### 相同点
+```typescript
+// 接口和类型别名都可以用来描 述对象或函数的类型，只是语法不同
+type MyTYpe = {
+  name: string;
+  say(): void;
+}
+
+interface MyInterface {
+  name: string;
+  say(): void;
+}
+// 都允许扩展
+// interface 用 extends 来实现扩展
+interface MyInterface {
+  name: string;
+  say(): void;
+}
+
+interface MyInterface2 extends MyInterface {
+  sex: string;
+}
+
+let person:MyInterface2 = {
+  name:'树哥',
+  sex:'男',
+  say(): void {
+    console.log("hello 啊，树哥！");
+  }
+}
+// type 使用 & 实现扩展
+type MyType = {
+  name:string;
+  say(): void;
+}
+type MyType2 = MyType & {
+  sex:string;
+}
+let value: MyType2 = {
+  name:'树哥',
+  sex:'男',
+  say(): void {
+    console.log("hello 啊，树哥！");
+  }
+}
+
+```
+
+### 不同点
+```typescript
+// type可以声明基本数据类型别名/联合类型/元组等，而interface不行
+// 基本类型别名
+type UserName = string;
+type UserName = string | number;
+// 联合类型
+type Animal = Pig | Dog | Cat;
+type List = [string, boolean, number];
+
+// interface能够合并声明，而type不行
+interface Person {
+  name: string
+}
+interface Person {
+  age: number
+}
+// 此时Person同时具有name和age属性
+```
+
+# 泛型(generic)
 软件工程中，我们不仅要创建一致的定义良好的API，同时也要考虑可重用性。 组件不仅能够支持当前的数据类型，同时也能支持未来的数据类型，这在创建大型系统时为你提供了十分灵活的功能。
 
 在像C#和Java这样的语言中，可以使用泛型来创建可重用的组件，一个组件可以支持多种类型的数据。 这样用户就可以以自己的数据类型来使用组件。
